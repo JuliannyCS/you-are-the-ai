@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "raylib.h"
+#include <vector>
 using namespace std;
 
 // Pay numbers based on: Billy Perrigo, "Exclusive: OpenAI Used Kenyan Workers on 
@@ -43,21 +44,32 @@ int main() {
     SetTargetFPS(60);
 
     //Loading the image after InitWIndow
-    Texture2D photo = LoadTexture("cats-img.jpg");
-    if (photo.id == 0) {
-        cout << "Error:  Could not load cats-img.jpg" << endl;
-        CloseWindow();
-        return 1;
+    // Load all 5 Phase 1 images and alternating cats and non-cats
+    vector <string> imageFiles = {
+        "cats-img.jpg", "dog.jpg", "cat2.jpg", "car.jpg", "cat3.jpg"
+    };
+    vector <bool> isCat = { true, false, true, false, true };
+
+    vector <Texture2D> photos;
+    for (int i = 0; i < (int)imageFiles.size(); i++) {
+        Texture2D tex = LoadTexture(imageFiles[i].c_str());
+        if (tex.id == 0) {
+            cout << "Error: Could not load " << imageFiles[i] << endl;
+            CloseWindow();
+            return 1;
+        }
+        photos.push_back(tex);
     }
 
     float timeLeft = 30.0f;
     int tasksCompleted = 0;
+    int correctLabels = 0;
 
     //Defining two side by side clickable buttons
     Rectangle leftBtn = { 240, 560, 220, 80 };
     Rectangle rightBtn = { 540, 560, 220 , 80 };
 
-    while (!WindowShouldClose() && timeLeft > 0) {
+    while (!WindowShouldClose() && timeLeft > 0 && tasksCompleted < (int)photos.size()) {
         timeLeft -= GetFrameTime();
         if (timeLeft < 0) timeLeft = 0;
         Vector2 mousePos = GetMousePosition();
@@ -65,15 +77,24 @@ int main() {
         bool hoverRight = CheckCollisionPointRec(mousePos, rightBtn);
 
         if (hoverLeft && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (isCat[tasksCompleted]) correctLabels++;
             tasksCompleted++;
         }
-        if (hoverRight && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+        if (hoverRight && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (!isCat[tasksCompleted]) correctLabels++;
             tasksCompleted++;
         }
+
+        // Stoping immediately if finishing the last image
+        if (tasksCompleted >= (int)photos.size()) break;
 
         //Beginning to draw
         BeginDrawing();
         ClearBackground(RAYWHITE);
+
+        float progress = (float)tasksCompleted / (float)photos.size();
+        DrawRectangle(40, 12, 920, 12, LIGHTGRAY);
+        DrawRectangle(40, 12, (int)(920 * progress), 12, BLUE);
 
         //Top hud. Timer and task counter
         DrawText(TextFormat("Time: %.1fs", timeLeft), 780, 30, 32, MAROON);
@@ -83,9 +104,10 @@ int main() {
         DrawText("Is this a cat?", 380, 100, 36, BLACK);
 
         //Drawing  image scaled into a 400x320 box in the center
-        Rectangle source = { 0, 0, (float)photo.width, (float)photo.height };
+        Texture2D currentPhoto = photos[tasksCompleted];
+        Rectangle source = { 0, 0, (float)currentPhoto.width, (float)currentPhoto.height };
         Rectangle dest = { 300, 170, 400, 320 };
-        DrawTexturePro(photo, source, dest, { 0, 0 }, 0.0f, WHITE);
+        DrawTexturePro(currentPhoto, source, dest, { 0, 0 }, 0.0f, WHITE);
         DrawRectangleLinesEx(dest, 3, LIGHTGRAY);
 
         //Drawing the left button which is "CAT"
@@ -100,10 +122,13 @@ int main() {
     }
 
     //Cleaning up memory
-    UnloadTexture(photo);
+    for (int i = 0; i < (int)photos.size(); i++) {
+        UnloadTexture(photos[i]);
+    }
     CloseWindow();
 
     cout << "\nShift over! Tasks completed: " << tasksCompleted << endl;
+    cout << "Correct labels: " << correctLabels << " / " << tasksCompleted << endl;
     //Ending of Raylib Window........
 
     printFacts();
