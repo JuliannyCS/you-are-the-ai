@@ -35,6 +35,8 @@ int main() {
     cout << "You will earn $" << PAY_PER_TASK << " for each item you label." << endl;
 
     // TODO: the raylib game window goes here (Mahian's part)
+
+
     //Mahian....
     //Starting of the raylib window.
     const int screenWidth = 1000;
@@ -65,58 +67,92 @@ int main() {
     int tasksCompleted = 0;
     int correctLabels = 0;
 
+    // Phase 2 portion. Moderating text comments. So true = SAFE and false = HARMFUL
+    vector <string> comments = {
+        "Great recipe! I added a little\nextra garlic and my family loved it.",
+        "You are completely worthless.\nDelete your account and disappear.",
+        "Does anyone know what time\nthe library closes on Fridays?",
+        "People like you don't belong here.\nGo back to where you came from.",
+        "URGENT: Send your bank details now\nor your account will be locked."
+    };
+    vector<bool> isSafe = { true, false, true, false, false };
+
+    int numPhotos = photos.size();
+    int totalTasks = numPhotos + comments.size();
+
     //Defining two side by side clickable buttons
     Rectangle leftBtn = { 240, 560, 220, 80 };
     Rectangle rightBtn = { 540, 560, 220 , 80 };
 
-    while (!WindowShouldClose() && timeLeft > 0 && tasksCompleted < (int)photos.size()) {
+    while (!WindowShouldClose() && timeLeft > 0 && tasksCompleted < totalTasks) {
         timeLeft -= GetFrameTime();
         if (timeLeft < 0) timeLeft = 0;
         Vector2 mousePos = GetMousePosition();
         bool hoverLeft = CheckCollisionPointRec(mousePos, leftBtn);
         bool hoverRight = CheckCollisionPointRec(mousePos, rightBtn);
+        
+        //phase 2
+        bool isPhase2 = (tasksCompleted >= numPhotos);
 
         if (hoverLeft && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            if (isCat[tasksCompleted]) correctLabels++;
+            if (!isPhase2 && isCat[tasksCompleted]) correctLabels++;
+            else if (isPhase2 && isSafe[tasksCompleted - numPhotos]) correctLabels++;
             tasksCompleted++;
         }
         if (hoverRight && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            if (!isCat[tasksCompleted]) correctLabels++;
+            if (!isPhase2 && !isCat[tasksCompleted]) correctLabels++;
+            else if (isPhase2 && !isSafe[tasksCompleted - numPhotos]) correctLabels++;
             tasksCompleted++;
         }
 
-        // Stoping immediately if finishing the last image
-        if (tasksCompleted >= (int)photos.size()) break;
+        //After the final task is given, do a stop
+        if (tasksCompleted >= totalTasks) break;
+
+        //Rechecking the whole phase so that no click is moved to phase 2
+        isPhase2 = (tasksCompleted >= numPhotos);
 
         //Beginning to draw
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        Color bgColor = isPhase2 ? Color{ 28, 28, 36, 255 } : RAYWHITE;
+        Color textColor = isPhase2 ? RAYWHITE : DARKGRAY;
+        ClearBackground(bgColor);
 
-        float progress = (float)tasksCompleted / (float)photos.size();
+        // Progress bar across all 10 tasks
+        float progress = (float)tasksCompleted / (float)totalTasks;
         DrawRectangle(40, 12, 920, 12, LIGHTGRAY);
-        DrawRectangle(40, 12, (int)(920 * progress), 12, BLUE);
+        DrawRectangle(40, 12, (int)(920 * progress), 12, isPhase2 ? RED : BLUE);
 
-        //Top hud. Timer and task counter
-        DrawText(TextFormat("Time: %.1fs", timeLeft), 780, 30, 32, MAROON);
-        DrawText(TextFormat("Labeled: %d", tasksCompleted), 40, 30, 32, DARKGRAY);
+        // Top HUD: Timer and task counter
+        DrawText(TextFormat("Time: %.1fs", timeLeft), 780, 30, 32, isPhase2 ? RED : MAROON);
+        DrawText(TextFormat("Labeled: %d / %d", tasksCompleted, totalTasks), 40, 30, 32, textColor);
 
         //prompt
-        DrawText("Is this a cat?", 380, 100, 36, BLACK);
+        // Middle Zone: Image (Phase 1) vs. Comment Card (Phase 2)
+        if (!isPhase2) {
+            DrawText("Is this a cat?", 380, 100, 36, BLACK);
 
-        //Drawing  image scaled into a 400x320 box in the center
-        Texture2D currentPhoto = photos[tasksCompleted];
-        Rectangle source = { 0, 0, (float)currentPhoto.width, (float)currentPhoto.height };
-        Rectangle dest = { 300, 170, 400, 320 };
-        DrawTexturePro(currentPhoto, source, dest, { 0, 0 }, 0.0f, WHITE);
-        DrawRectangleLinesEx(dest, 3, LIGHTGRAY);
+            Texture2D currentPhoto = photos[tasksCompleted];
+            Rectangle source = { 0, 0, (float)currentPhoto.width, (float)currentPhoto.height };
+            Rectangle dest = { 300, 170, 400, 320 };
+            DrawTexturePro(currentPhoto, source, dest, { 0, 0 }, 0.0f, WHITE);
+            DrawRectangleLinesEx(dest, 3, LIGHTGRAY);
+        } else {
+            DrawText("Is this comment harmful?", 290, 100, 36, RED);
 
-        //Drawing the left button which is "CAT"
+            Rectangle card = { 150, 180, 700, 290 };
+            DrawRectangleRec(card, Color{ 45, 45, 58, 255 });
+            DrawRectangleLinesEx(card, 3, GRAY);
+
+            DrawText(comments[tasksCompleted - numPhotos].c_str(), 190, 270, 28, RAYWHITE);
+        }
+
+        // Drawing the left button ("CAT" -> "SAFE")
         DrawRectangleRec(leftBtn, hoverLeft ? DARKGREEN : GREEN);
-        DrawText("CAT", 315, 585, 32, WHITE);
+        DrawText(isPhase2 ? "SAFE" : "CAT", isPhase2 ? 305 : 315, 585, 32, WHITE);
 
-        //Drawinf the right button which is "NOT CAT"
+        // Drawing the right button ("NOT CAT" -> "HARMFUL")
         DrawRectangleRec(rightBtn, hoverRight ? MAROON : RED);
-        DrawText("NOT CAT", 575, 585, 32, WHITE);
+        DrawText(isPhase2 ? "HARMFUL" : "NOT CAT", 575, 585, 32, WHITE);
 
         EndDrawing();
     }
