@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include "raylib.h"
 using namespace std;
 
 // Pay numbers based on: Billy Perrigo, "Exclusive: OpenAI Used Kenyan Workers on 
@@ -33,6 +34,77 @@ int main() {
     cout << "You will earn $" << PAY_PER_TASK << " for each item you label." << endl;
 
     // TODO: the raylib game window goes here (Mahian's part)
+    //Mahian....
+    //Starting of the raylib window.
+    const int screenWidth = 1000;
+    const int screenHeight = 800;
+
+    InitWindow(screenWidth, screenHeight, "LabelBot AI - Worker Portal");
+    SetTargetFPS(60);
+
+    //Loading the image after InitWIndow
+    Texture2D photo = LoadTexture("cats-img.jpg");
+    if (photo.id == 0) {
+        cout << "Error:  Could not load cats-img.jpg" << endl;
+        CloseWindow();
+        return 1;
+    }
+
+    float timeLeft = 30.0f;
+    int tasksCompleted = 0;
+
+    //Defining two side by side clickable buttons
+    Rectangle leftBtn = { 240, 560, 220, 80 };
+    Rectangle rightBtn = { 540, 560, 220 , 80 };
+
+    while (!WindowShouldClose() && timeLeft > 0) {
+        timeLeft -= GetFrameTime();
+        if (timeLeft < 0) timeLeft = 0;
+        Vector2 mousePos = GetMousePosition();
+        bool hoverLeft = CheckCollisionPointRec(mousePos, leftBtn);
+        bool hoverRight = CheckCollisionPointRec(mousePos, rightBtn);
+
+        if (hoverLeft && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            tasksCompleted++;
+        }
+        if (hoverRight && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+            tasksCompleted++;
+        }
+
+        //Beginning to draw
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+
+        //Top hud. Timer and task counter
+        DrawText(TextFormat("Time: %.1fs", timeLeft), 780, 30, 32, MAROON);
+        DrawText(TextFormat("Labeled: %d", tasksCompleted), 40, 30, 32, DARKGRAY);
+
+        //prompt
+        DrawText("Is this a cat?", 380, 100, 36, BLACK);
+
+        //Drawing  image scaled into a 400x320 box in the center
+        Rectangle source = { 0, 0, (float)photo.width, (float)photo.height };
+        Rectangle dest = { 300, 170, 400, 320 };
+        DrawTexturePro(photo, source, dest, { 0, 0 }, 0.0f, WHITE);
+        DrawRectangleLinesEx(dest, 3, LIGHTGRAY);
+
+        //Drawing the left button which is "CAT"
+        DrawRectangleRec(leftBtn, hoverLeft ? DARKGREEN : GREEN);
+        DrawText("CAT", 315, 585, 32, WHITE);
+
+        //Drawinf the right button which is "NOT CAT"
+        DrawRectangleRec(rightBtn, hoverRight ? MAROON : RED);
+        DrawText("NOT CAT", 575, 585, 32, WHITE);
+
+        EndDrawing();
+    }
+
+    //Cleaning up memory
+    UnloadTexture(photo);
+    CloseWindow();
+
+    cout << "\nShift over! Tasks completed: " << tasksCompleted << endl;
+    //Ending of Raylib Window........
 
     printFacts();
     
