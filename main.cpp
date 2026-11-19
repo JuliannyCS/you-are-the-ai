@@ -1,14 +1,9 @@
-// headers here ...
+#include <iostream>
+using namespace std;
 
 int main() {
 
-    /***
-
-     your project code here!
-
-     ***/
-
-
-
+    cout << "Welcome to LabelBot AI!" << endl;
+    
     return 0;
 }
