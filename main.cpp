@@ -1,3 +1,29 @@
+// =====================================================================
+// You Are the AI - Hackathon 2, CSC 103, Fall 2026
+// Team: Julianny C., Mahian Tahmid, Mushfik Hoque
+//
+// A game that pretends to be an AI app ("LabelBot AI"), but the player
+// does all the labeling work: first images (cat / not cat), then
+// comments with no clear right answer. At the end it reveals:
+// "The AI was you," and compares what the player earned vs. what the
+// company made, using real pay rates from our research.
+//
+// Connection to Calculating Empires: the "Human computers" section shows
+// that before machines, "computers" were people doing hidden work.
+// Today, AI still depends on hidden human workers who label data.
+//
+// Abstraction: the word "AI" hides the people behind it. Users see AI,
+// the AI company sees a contractor, the contractor sees workers.
+// Efficiency: AI looks fast and cheap, but efficient for who?
+// The worker earns cents while the company earns much more.
+//
+// Parts: Julianny - terminal, research and citations, Content.h,
+//        ending screen | Mahian - raylib game window |
+//        Mushfik - Worker class (Worker.h, Worker.cpp)
+//
+// To run: cmake -B build, cmake --build build, ./build/main
+// =====================================================================
+
 #include <iostream>
 #include <string>
 #include "raylib.h"
@@ -14,6 +40,12 @@ using namespace std;
 // OpenAI paid Sama $12.50/hr per worker.
 const double PAY_PER_TASK = 0.07;
 const double COMPANY_PER_TASK = 0.56;
+
+// "Computers were people" fact based on: Kate Crawford and Vladan Joler,
+// "Calculating Empires: A Genealogy of Technology and Power Since 1500" (2023),
+// sections "Human computing in WWI" and "The age of women computers".
+// https://calculatingempires.net
+
 
 // Shows the real facts behind the game at the end
 void printFacts() {
