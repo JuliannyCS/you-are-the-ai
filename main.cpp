@@ -2,6 +2,8 @@
 #include <string>
 #include "raylib.h"
 #include <vector>
+#include <iomanip>
+#include "Content.h"
 using namespace std;
 
 // Pay numbers based on: Billy Perrigo, "Exclusive: OpenAI Used Kenyan Workers on 
@@ -16,8 +18,8 @@ const double COMPANY_PER_TASK = 0.56;
 void printFacts() {
     cout << endl;
     cout << "----- The truth behind LabelBot AI -----" << endl;
-    cout << "In 1918, 'computers were people." << endl;
-    cout << "In 2023,'AI' was people too." << endl;
+    cout << "In 1918, 'computers' were people." << endl;
+    cout << "In 2023, 'AI' was people too." << endl;
     cout << "Workers in Kenya labeled text for ChatGPT for $1.32-$2 an hour." << endl;
     cout << "OpenAI paid the company $12.50 an hour per worker." << endl;
     cout << "The AI was you." << endl;
@@ -42,9 +44,10 @@ int main() {
     const int screenWidth = 1000;
     const int screenHeight = 800;
 
+    SetTraceLogLevel(LOG_WARNING);   // hide raylib's INFO messages, only show warnings/errors
     InitWindow(screenWidth, screenHeight, "LabelBot AI - Worker Portal");
     SetTargetFPS(60);
-
+    
     //Loading the image after InitWIndow
     // Load all 5 Phase 1 images and alternating cats and non-cats
     vector <string> imageFiles = {
@@ -157,17 +160,108 @@ int main() {
         EndDrawing();
     }
 
+        // ----- Ending screen: "The AI was you." (Julianny) -----
+    // Earnings use the pay rates from our research (top of file)
+    double playerEarnings = tasksCompleted * PAY_PER_TASK;
+    double companyEarnings = tasksCompleted * COMPANY_PER_TASK;
+
+    string finalMessage = "The AI was you, " + name + ".";
+    float endTimer = 0.0f;            // seconds since the ending screen started
+    const float GLITCH_START = 1.5f;  // when the logo starts glitching
+    const float TYPE_START = 3.0f;    // when the message starts typing
+    const float TYPE_SPEED = 0.08f;   // seconds per letter
+    float typeEnd = TYPE_START + finalMessage.length() * TYPE_SPEED;
+    float barStart = typeEnd + 0.5f;  // bars start after the message is typed
+
+    // make the font smaller if a long name makes the message too wide
+    int msgSize = 52;
+    while (MeasureText(finalMessage.c_str(), msgSize) > screenWidth - 80 && msgSize > 24) {
+        msgSize -= 2;
+    }
+
+    while (!WindowShouldClose() && !IsKeyPressed(KEY_ENTER)) {
+        endTimer += GetFrameTime();
+
+        BeginDrawing();
+        ClearBackground(Color{ 15, 15, 20, 255 });   // dark screen: the "AI app" is gone
+
+        // 1) the "LabelBot AI" logo, then it glitches and breaks
+        if (endTimer < TYPE_START) {
+            const char* logo = "LabelBot AI";
+            int logoX = (screenWidth - MeasureText(logo, 72)) / 2;
+            int logoY = 300;
+
+            if (endTimer < GLITCH_START) {
+                DrawText(logo, logoX, logoY, 72, Color{ 120, 140, 255, 255 });
+            } else {
+                // glitch: random shake, red/blue copies, flicker and broken lines
+                int dx = GetRandomValue(-12, 12);
+                int dy = GetRandomValue(-6, 6);
+                DrawText(logo, logoX + dx - 4, logoY + dy, 72, Fade(RED, 0.7f));
+                DrawText(logo, logoX + dx + 4, logoY - dy, 72, Fade(SKYBLUE, 0.7f));
+                if (GetRandomValue(0, 3) > 0) {
+                    DrawText(logo, logoX + dx, logoY, 72, WHITE);
+                }
+                for (int i = 0; i < 5; i++) {
+                    int y = GetRandomValue(0, screenHeight);
+                    DrawRectangle(0, y, screenWidth, GetRandomValue(2, 8), Fade(WHITE, 0.15f));
+                }
+            }
+        }
+        // 2) typewriter effect with the player's name
+        else {
+            int letters = (int)((endTimer - TYPE_START) / TYPE_SPEED);
+            if (letters > (int)finalMessage.length()) letters = finalMessage.length();
+            string shown = finalMessage.substr(0, letters);
+
+            // measure the FULL message so the text doesn't move while typing
+            int msgX = (screenWidth - MeasureText(finalMessage.c_str(), msgSize)) / 2;
+            DrawText(shown.c_str(), msgX, 200, msgSize, WHITE);
+
+            // blinking cursor while it types
+            if (letters < (int)finalMessage.length() && (int)(endTimer * 4) % 2 == 0) {
+                DrawText("_", msgX + MeasureText(shown.c_str(), msgSize), 200, msgSize, WHITE);
+            }
+        }
+
+        // 3) money bars grow after the message is done
+        if (endTimer > barStart && companyEarnings > 0) {
+            float grow = (endTimer - barStart) / 1.5f;   // goes from 0 to 1 in 1.5 seconds
+            if (grow > 1.0f) grow = 1.0f;
+
+            int barX = 150;
+            int maxWidth = 700;
+            int playerWidth = (int)(maxWidth * (playerEarnings / companyEarnings) * grow);
+            int companyWidth = (int)(maxWidth * grow);
+
+            DrawText(TextFormat("You: $%.2f", playerEarnings * grow), barX, 340, 26, LIGHTGRAY);
+            DrawRectangle(barX, 375, playerWidth, 40, LIGHTGRAY);
+
+            DrawText(TextFormat("The company: $%.2f", companyEarnings * grow), barX, 450, 26, RED);
+            DrawRectangle(barX, 485, companyWidth, 40, RED);
+        }
+
+                // 4) hint at the end (blinks so the player notices it)
+        if (endTimer > barStart + 1.5f && (int)(endTimer * 2) % 2 == 0) {
+            const char* hint = "Press ENTER to see the truth in the terminal";
+            DrawText(hint, (screenWidth - MeasureText(hint, 26)) / 2, 600, 26, WHITE);
+        
+        }
+
+        EndDrawing();
+    }
     //Cleaning up memory
     for (int i = 0; i < (int)photos.size(); i++) {
         UnloadTexture(photos[i]);
     }
     CloseWindow();
 
+    cout << fixed << setprecision(2);   // always show money with 2 decimals
     cout << "\nShift over! Tasks completed: " << tasksCompleted << endl;
-    cout << "Correct labels: " << correctLabels << " / " << tasksCompleted << endl;
+    cout << "You earned $" << playerEarnings << ". The company made $" << companyEarnings << "." << endl;
     //Ending of Raylib Window........
 
     printFacts();
-    
+
     return 0;
 }
