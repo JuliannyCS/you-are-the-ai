@@ -66,19 +66,12 @@ int main() {
         photos.push_back(tex);
     }
 
-    float timeLeft = 30.0f;
+    float timeLeft = 45.0f;
     int tasksCompleted = 0;
     int correctLabels = 0;
 
-    // Phase 2 portion. Moderating text comments. So true = SAFE and false = HARMFUL
-    vector <string> comments = {
-        "Great recipe! I added a little\nextra garlic and my family loved it.",
-        "You are completely worthless.\nDelete your account and disappear.",
-        "Does anyone know what time\nthe library closes on Fridays?",
-        "People like you don't belong here.\nGo back to where you came from.",
-        "URGENT: Send your bank details now\nor your account will be locked."
-    };
-    vector<bool> isSafe = { true, false, true, false, false };
+        // Phase 2: comments from Content.h. There is no "right" answer on purpose.
+    vector<string> comments(COMMENTS, COMMENTS + NUM_COMMENTS);
 
     int numPhotos = photos.size();
     int totalTasks = numPhotos + comments.size();
@@ -99,12 +92,12 @@ int main() {
 
         if (hoverLeft && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (!isPhase2 && isCat[tasksCompleted]) correctLabels++;
-            else if (isPhase2 && isSafe[tasksCompleted - numPhotos]) correctLabels++;
+            
             tasksCompleted++;
         }
         if (hoverRight && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (!isPhase2 && !isCat[tasksCompleted]) correctLabels++;
-            else if (isPhase2 && !isSafe[tasksCompleted - numPhotos]) correctLabels++;
+           
             tasksCompleted++;
         }
 
