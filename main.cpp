@@ -4,6 +4,7 @@
 #include <vector>
 #include <iomanip>
 #include "Content.h"
+#include "Worker.h"
 using namespace std;
 
 // Pay numbers based on: Billy Perrigo, "Exclusive: OpenAI Used Kenyan Workers on 
@@ -68,6 +69,7 @@ int main() {
 
     float timeLeft = 45.0f;
     int tasksCompleted = 0;
+        Worker worker(PAY_PER_TASK, COMPANY_PER_TASK);   // tracks tasks and pay (Worker class)
     int correctLabels = 0;
 
         // Phase 2: comments from Content.h. There is no "right" answer on purpose.
@@ -94,11 +96,13 @@ int main() {
             if (!isPhase2 && isCat[tasksCompleted]) correctLabels++;
             
             tasksCompleted++;
+                        worker.completeTask();
         }
         if (hoverRight && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (!isPhase2 && !isCat[tasksCompleted]) correctLabels++;
            
             tasksCompleted++;
+                        worker.completeTask();
         }
 
         //After the final task is given, do a stop
@@ -155,8 +159,8 @@ int main() {
 
         // ----- Ending screen: "The AI was you." (Julianny) -----
     // Earnings use the pay rates from our research (top of file)
-    double playerEarnings = tasksCompleted * PAY_PER_TASK;
-    double companyEarnings = tasksCompleted * COMPANY_PER_TASK;
+    double playerEarnings = worker.getEarnings();          // from the Worker class
+    double companyEarnings = worker.getCompanyEarnings();
 
     string finalMessage = "The AI was you, " + name + ".";
     float endTimer = 0.0f;            // seconds since the ending screen started
