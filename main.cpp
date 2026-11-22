@@ -69,8 +69,6 @@ int main() {
 
     cout << "You will earn $" << PAY_PER_TASK << " for each item you label." << endl;
 
-    // TODO: the raylib game window goes here (Mahian's part)
-
 
     //Mahian....
     //Starting of the raylib window.
@@ -78,15 +76,14 @@ int main() {
     const int screenHeight = 800;
 
     SetTraceLogLevel(LOG_WARNING);   // hide raylib's INFO messages, only show warnings/errors
+    // line suggested by Claude (Anthropic) when asked how to hide raylib's INFO messages, Nov. 2026
     InitWindow(screenWidth, screenHeight, "LabelBot AI - Worker Portal");
     SetTargetFPS(60);
     
-    //Loading the image after InitWIndow
-    // Load all 5 Phase 1 images and alternating cats and non-cats
-    vector <string> imageFiles = {
-        "cats-img.jpg", "dog.jpg", "cat2.jpg", "car.jpg", "cat3.jpg"
-    };
-    vector <bool> isCat = { true, false, true, false, true };
+    // Load the 6 Phase 1 images from Content.h (cited there)
+    // lines suggested by Claude (Anthropic) when asked how to use the arrays from Content.h, Nov. 2026
+    vector<string> imageFiles(IMAGE_FILES, IMAGE_FILES + NUM_IMAGES);
+    vector<bool> isCat(HAS_CAT, HAS_CAT + NUM_IMAGES);
 
     vector <Texture2D> photos;
     for (int i = 0; i < (int)imageFiles.size(); i++) {
@@ -104,7 +101,7 @@ int main() {
         Worker worker(PAY_PER_TASK, COMPANY_PER_TASK);   // tracks tasks and pay (Worker class)
     int correctLabels = 0;
 
-        // Phase 2: comments from Content.h. There is no "right" answer on purpose.
+    // Phase 2: comments from Content.h. There is no "right" answer on purpose.
     vector<string> comments(COMMENTS, COMMENTS + NUM_COMMENTS);
 
     int numPhotos = photos.size();
@@ -126,7 +123,6 @@ int main() {
 
         if (hoverLeft && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (!isPhase2 && isCat[tasksCompleted]) correctLabels++;
-            
             tasksCompleted++;
                         worker.completeTask();
         }
@@ -191,7 +187,7 @@ int main() {
 
         // ----- Ending screen: "The AI was you." (Julianny) -----
     // Earnings use the pay rates from our research (top of file)
-    double playerEarnings = worker.getEarnings();          // from the Worker class
+    double playerEarnings = worker.getEarnings();  // from the Worker class
     double companyEarnings = worker.getCompanyEarnings();
 
     string finalMessage = "The AI was you, " + name + ".";
@@ -215,6 +211,12 @@ int main() {
         ClearBackground(Color{ 15, 15, 20, 255 });   // dark screen: the "AI app" is gone
 
         // 1) the "LabelBot AI" logo, then it glitches and breaks
+                /* -----
+        This code was written with the aid of Claude (Anthropic),
+        when prompted 'how can I make the ending screen more dynamic?'
+        The generated code helped me write the logo glitch effect below.
+        Accessed: Nov. 2026
+        ----- */
         if (endTimer < TYPE_START) {
             const char* logo = "LabelBot AI";
             int logoX = (screenWidth - MeasureText(logo, 72)) / 2;
