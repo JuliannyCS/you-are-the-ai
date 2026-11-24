@@ -1,7 +1,36 @@
+// =====================================================================
+// You Are the AI - Hackathon 2, CSC 103, Fall 2026
+// Team: Julianny C., Mahian Tahmid, Mushfik Hoque
+//
+// A game that pretends to be an AI app ("LabelBot AI"), but the player
+// does all the labeling work: first images (cat / not cat), then
+// comments with no clear right answer. At the end it reveals:
+// "The AI was you," and compares what the player earned vs. what the
+// company made, using real pay rates from our research.
+//
+// Connection to Calculating Empires: the "Human computers" section shows
+// that before machines, "computers" were people doing hidden work.
+// Today, AI still depends on hidden human workers who label data.
+//
+// Abstraction: the word "AI" hides the people behind it. Users see AI,
+// the AI company sees a contractor, the contractor sees workers.
+// Efficiency: AI looks fast and cheap, but efficient for who?
+// The worker earns cents while the company earns much more.
+//
+// Parts: Julianny - terminal, research and citations, Content.h,
+//        ending screen | Mahian - raylib game window |
+//        Mushfik - Worker class (Worker.h, Worker.cpp)
+//
+// To run: cmake -B build, cmake --build build, ./build/main
+// =====================================================================
+
 #include <iostream>
 #include <string>
 #include "raylib.h"
 #include <vector>
+#include <iomanip>
+#include "Content.h"
+#include "Worker.h"
 using namespace std;
 
 // Pay numbers based on: Billy Perrigo, "Exclusive: OpenAI Used Kenyan Workers on 
@@ -12,12 +41,18 @@ using namespace std;
 const double PAY_PER_TASK = 0.07;
 const double COMPANY_PER_TASK = 0.56;
 
+// "Computers were people" fact based on: Kate Crawford and Vladan Joler,
+// "Calculating Empires: A Genealogy of Technology and Power Since 1500" (2023),
+// sections "Human computing in WWI" and "The age of women computers".
+// https://calculatingempires.net
+
+
 // Shows the real facts behind the game at the end
 void printFacts() {
     cout << endl;
     cout << "----- The truth behind LabelBot AI -----" << endl;
-    cout << "In 1918, 'computers were people." << endl;
-    cout << "In 2023,'AI' was people too." << endl;
+    cout << "In 1918, 'computers' were people." << endl;
+    cout << "In 2023, 'AI' was people too." << endl;
     cout << "Workers in Kenya labeled text for ChatGPT for $1.32-$2 an hour." << endl;
     cout << "OpenAI paid the company $12.50 an hour per worker." << endl;
     cout << "The AI was you." << endl;
@@ -34,23 +69,21 @@ int main() {
 
     cout << "You will earn $" << PAY_PER_TASK << " for each item you label." << endl;
 
-    // TODO: the raylib game window goes here (Mahian's part)
-
 
     //Mahian....
     //Starting of the raylib window.
     const int screenWidth = 1000;
     const int screenHeight = 800;
 
+    SetTraceLogLevel(LOG_WARNING);   // hide raylib's INFO messages, only show warnings/errors
+    // line suggested by Claude (Anthropic) when asked how to hide raylib's INFO messages, Nov. 2026
     InitWindow(screenWidth, screenHeight, "LabelBot AI - Worker Portal");
     SetTargetFPS(60);
-
-    //Loading the image after InitWIndow
-    // Load all 5 Phase 1 images and alternating cats and non-cats
-    vector <string> imageFiles = {
-        "cats-img.jpg", "dog.jpg", "cat2.jpg", "car.jpg", "cat3.jpg"
-    };
-    vector <bool> isCat = { true, false, true, false, true };
+    
+    // Load the 6 Phase 1 images from Content.h (cited there)
+    // lines suggested by Claude (Anthropic) when asked how to use the arrays from Content.h, Nov. 2026
+    vector<string> imageFiles(IMAGE_FILES, IMAGE_FILES + NUM_IMAGES);
+    vector<bool> isCat(HAS_CAT, HAS_CAT + NUM_IMAGES);
 
     vector <Texture2D> photos;
     for (int i = 0; i < (int)imageFiles.size(); i++) {
@@ -63,19 +96,13 @@ int main() {
         photos.push_back(tex);
     }
 
-    float timeLeft = 30.0f;
+    float timeLeft = 45.0f;
     int tasksCompleted = 0;
+        Worker worker(PAY_PER_TASK, COMPANY_PER_TASK);   // tracks tasks and pay (Worker class)
     int correctLabels = 0;
 
-    // Phase 2 portion. Moderating text comments. So true = SAFE and false = HARMFUL
-    vector <string> comments = {
-        "Great recipe! I added a little\nextra garlic and my family loved it.",
-        "You are completely worthless.\nDelete your account and disappear.",
-        "Does anyone know what time\nthe library closes on Fridays?",
-        "People like you don't belong here.\nGo back to where you came from.",
-        "URGENT: Send your bank details now\nor your account will be locked."
-    };
-    vector<bool> isSafe = { true, false, true, false, false };
+    // Phase 2: comments from Content.h. There is no "right" answer on purpose.
+    vector<string> comments(COMMENTS, COMMENTS + NUM_COMMENTS);
 
     int numPhotos = photos.size();
     int totalTasks = numPhotos + comments.size();
@@ -96,13 +123,14 @@ int main() {
 
         if (hoverLeft && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (!isPhase2 && isCat[tasksCompleted]) correctLabels++;
-            else if (isPhase2 && isSafe[tasksCompleted - numPhotos]) correctLabels++;
             tasksCompleted++;
+                        worker.completeTask();
         }
         if (hoverRight && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (!isPhase2 && !isCat[tasksCompleted]) correctLabels++;
-            else if (isPhase2 && !isSafe[tasksCompleted - numPhotos]) correctLabels++;
+           
             tasksCompleted++;
+                        worker.completeTask();
         }
 
         //After the final task is given, do a stop
@@ -157,17 +185,114 @@ int main() {
         EndDrawing();
     }
 
+        // ----- Ending screen: "The AI was you." (Julianny) -----
+    // Earnings use the pay rates from our research (top of file)
+    double playerEarnings = worker.getEarnings();  // from the Worker class
+    double companyEarnings = worker.getCompanyEarnings();
+
+    string finalMessage = "The AI was you, " + name + ".";
+    float endTimer = 0.0f;            // seconds since the ending screen started
+    const float GLITCH_START = 1.5f;  // when the logo starts glitching
+    const float TYPE_START = 3.0f;    // when the message starts typing
+    const float TYPE_SPEED = 0.08f;   // seconds per letter
+    float typeEnd = TYPE_START + finalMessage.length() * TYPE_SPEED;
+    float barStart = typeEnd + 0.5f;  // bars start after the message is typed
+
+    // make the font smaller if a long name makes the message too wide
+    int msgSize = 52;
+    while (MeasureText(finalMessage.c_str(), msgSize) > screenWidth - 80 && msgSize > 24) {
+        msgSize -= 2;
+    }
+
+    while (!WindowShouldClose() && !IsKeyPressed(KEY_ENTER)) {
+        endTimer += GetFrameTime();
+
+        BeginDrawing();
+        ClearBackground(Color{ 15, 15, 20, 255 });   // dark screen: the "AI app" is gone
+
+        // 1) the "LabelBot AI" logo, then it glitches and breaks
+                /* -----
+        This code was written with the aid of Claude (Anthropic),
+        when prompted 'how can I make the ending screen more dynamic?'
+        The generated code helped me write the logo glitch effect below.
+        Accessed: Nov. 2026
+        ----- */
+        if (endTimer < TYPE_START) {
+            const char* logo = "LabelBot AI";
+            int logoX = (screenWidth - MeasureText(logo, 72)) / 2;
+            int logoY = 300;
+
+            if (endTimer < GLITCH_START) {
+                DrawText(logo, logoX, logoY, 72, Color{ 120, 140, 255, 255 });
+            } else {
+                // glitch: random shake, red/blue copies, flicker and broken lines
+                int dx = GetRandomValue(-12, 12);
+                int dy = GetRandomValue(-6, 6);
+                DrawText(logo, logoX + dx - 4, logoY + dy, 72, Fade(RED, 0.7f));
+                DrawText(logo, logoX + dx + 4, logoY - dy, 72, Fade(SKYBLUE, 0.7f));
+                if (GetRandomValue(0, 3) > 0) {
+                    DrawText(logo, logoX + dx, logoY, 72, WHITE);
+                }
+                for (int i = 0; i < 5; i++) {
+                    int y = GetRandomValue(0, screenHeight);
+                    DrawRectangle(0, y, screenWidth, GetRandomValue(2, 8), Fade(WHITE, 0.15f));
+                }
+            }
+        }
+        // 2) typewriter effect with the player's name
+        else {
+            int letters = (int)((endTimer - TYPE_START) / TYPE_SPEED);
+            if (letters > (int)finalMessage.length()) letters = finalMessage.length();
+            string shown = finalMessage.substr(0, letters);
+
+            // measure the FULL message so the text doesn't move while typing
+            int msgX = (screenWidth - MeasureText(finalMessage.c_str(), msgSize)) / 2;
+            DrawText(shown.c_str(), msgX, 200, msgSize, WHITE);
+
+            // blinking cursor while it types
+            if (letters < (int)finalMessage.length() && (int)(endTimer * 4) % 2 == 0) {
+                DrawText("_", msgX + MeasureText(shown.c_str(), msgSize), 200, msgSize, WHITE);
+            }
+        }
+
+        // 3) money bars grow after the message is done
+        if (endTimer > barStart && companyEarnings > 0) {
+            float grow = (endTimer - barStart) / 1.5f;   // goes from 0 to 1 in 1.5 seconds
+            if (grow > 1.0f) grow = 1.0f;
+
+            int barX = 150;
+            int maxWidth = 700;
+            int playerWidth = (int)(maxWidth * (playerEarnings / companyEarnings) * grow);
+            int companyWidth = (int)(maxWidth * grow);
+
+            DrawText(TextFormat("You: $%.2f", playerEarnings * grow), barX, 340, 26, LIGHTGRAY);
+            DrawRectangle(barX, 375, playerWidth, 40, LIGHTGRAY);
+
+            DrawText(TextFormat("The company: $%.2f", companyEarnings * grow), barX, 450, 26, RED);
+            DrawRectangle(barX, 485, companyWidth, 40, RED);
+        }
+
+                // 4) hint at the end (blinks so the player notices it)
+        if (endTimer > barStart + 1.5f && (int)(endTimer * 2) % 2 == 0) {
+            const char* hint = "Press ENTER to see the truth in the terminal";
+            DrawText(hint, (screenWidth - MeasureText(hint, 26)) / 2, 600, 26, WHITE);
+        
+        }
+
+        EndDrawing();
+    }
     //Cleaning up memory
     for (int i = 0; i < (int)photos.size(); i++) {
         UnloadTexture(photos[i]);
     }
     CloseWindow();
 
+    cout << fixed << setprecision(2);   // always show money with 2 decimals
     cout << "\nShift over! Tasks completed: " << tasksCompleted << endl;
-    cout << "Correct labels: " << correctLabels << " / " << tasksCompleted << endl;
+    cout << "You earned $" << playerEarnings << ". The company made $" << companyEarnings << "." << endl;
     //Ending of Raylib Window........
 
     printFacts();
-    
+
     return 0;
 }

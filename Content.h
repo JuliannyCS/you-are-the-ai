@@ -28,12 +28,12 @@ const std::string COMMENTS[NUM_COMMENTS] = {
     "I don't see color.",
     "All lives matter.",
     "Not all men.",
-    "This neighborhood used to be nice before all the new people moved in.",
-    "Just pray about it, depression is a spiritual thing.",
-    "Kids today are soft. We got spanked and turned out fine.",
-    "If gay marriage is legal, why do we still need Pride?",
-    "She's really smart for someone who went to community college.",
-    "Thoughts and prayers."
+    "This neighborhood used to be nice\nbefore all the new people moved in.",
+    "Just pray about it,\ndepression is a spiritual thing.",
+    "Kids today are soft.\nWe got spanked and turned out fine.",
+    "If gay marriage is legal,\nwhy do we still need Pride?",
+    "She's really smart for someone\nwho went to community college.",
+    "(under a news post about a tragedy)\nThoughts and prayers."
 };
 
 #endif
